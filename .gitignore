@@ -1,6 +1,7 @@
+dist
+*.pnproj
+*.pnps
 *.class
-
-# Package Files #
 *.jar
 *.war
 *.ear
