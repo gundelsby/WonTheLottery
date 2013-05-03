@@ -5,6 +5,7 @@ var lotto = lotto || ( function () {
 	var NUMBERS_IN_ROW = 7;
 	var ADDITIONAL_NUMBERS = 3;
 	var ROWS_IN_TICKET = 10;
+	var LOCAL_STORAGE_PREFIX = "WonTheLottery";
 	
 	function createTableRow(numCells) {
 		var i, row, numbers = [];
@@ -45,6 +46,8 @@ var lotto = lotto || ( function () {
 			console.log("checkResults()");
 		},
 		saveTicket: function () {
+			var tableRows = this.tableTicket.getElementsByTagName("tr");
+			console.log("rows: ", tableRows);
 			console.log("saveTicket()");
 		}
 	};
