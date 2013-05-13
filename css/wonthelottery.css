@@ -1,0 +1,12 @@
+input[type=text] {
+	width: 60px;
+}
+
+table {
+	border-collapse: collapse;
+}
+
+tr {
+	background: lightgrey;
+	border: 1px solid grey;
+}
