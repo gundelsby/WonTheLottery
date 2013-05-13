@@ -9,18 +9,20 @@ var lotto = lotto || ( function () {
 	var LOCAL_STORAGE_TICKET_OBJECT_KEY = "ticket";
 	var STORED_OBJECT_ROWS_KEY = "rows";
 	
-	function createTableRow(numCells) {
-		var i, row, numbers = [];
+	function createTableRow(numCells, storedNumbers) {
+		var i, row, cells = [];
 		var inputAttributes = {
-			"type": "number",
+			"type": "text",
 			"autocomplete": "off",
-			"min": "1",
-			"max": "34"
+			"maxlength": "2"
 		};
 		for(i = 0; i < numCells; i++){
-			numbers.push(vermin.dom.create("td", {}, vermin.dom.create("input", inputAttributes)));
+			if(Array.isArray(storedNumbers)) {
+				inputAttributes.value = storedNumbers[i] || "";
+			}
+			cells.push(vermin.dom.create("td", {}, vermin.dom.create("input", inputAttributes)));
 		}
-		return vermin.dom.create("tr", {}, numbers);
+		return vermin.dom.create("tr", {}, cells);
 	};
 	
 	function extractTableRowData(tableRow) {
@@ -30,6 +32,14 @@ var lotto = lotto || ( function () {
 			values.push(tableCells[i].value);
 		}
 		return values;
+	};
+	
+	function getTicketRows(tableRows) {
+		var rows = [];
+		for(i = 0; i < tableRows.length; i++) {
+			rows.push(extractTableRowData(tableRows[i]));
+		}
+		return rows;
 	};
 	
 	var lotto = {
@@ -45,9 +55,8 @@ var lotto = lotto || ( function () {
 			ticketRows = savedTicket !== undefined || !savedTicket ? JSON.parse(savedTicket) : null;
 			this.tableTicket = vermin.elements.byId("ticket");
 			for(i = 0; i < ROWS_IN_TICKET; i++){
-				this.tableTicket.appendChild(createTableRow(NUMBERS_IN_ROW));
+				this.tableTicket.appendChild(createTableRow(NUMBERS_IN_ROW, Array.isArray(ticketRows) || ticketRows.rows[i]));
 			};
-			
 		},
 		buildDrawSection: function() {
 			var drawSectionContainer = vermin.elements.byId("drawdata");
@@ -55,14 +64,16 @@ var lotto = lotto || ( function () {
 			drawSectionContainer.appendChild(vermin.dom.create("table", {"id": "additional_numbers"}, createTableRow(ADDITIONAL_NUMBERS)));
 		},
 		checkResults: function () {
+			var drawnNumbers, drawnAdditionalNumbers;
+			var rows = getTicketRows(this.tableTicket.getElementsByTagName("tr"));
 			console.log("checkResults()");
 		},
 		saveTicket: function () {
-			var i, rows = [], ticket = {};
-			var tableRows = this.tableTicket.getElementsByTagName("tr");
+			var i, rows, ticket = {};
 			for(i = 0; i < tableRows.length; i++) {
 				rows.push(extractTableRowData(tableRows[i]));
 			}
+			rows = getTicketRows(this.tableTicket.getElementsByTagName("tr"));
 			ticket[STORED_OBJECT_ROWS_KEY] = rows;
 			localStorage.setItem(LOCAL_STORAGE_PREFIX + LOCAL_STORAGE_TICKET_OBJECT_KEY, JSON.stringify(ticket));
 		}
