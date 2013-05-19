@@ -42,6 +42,28 @@ var lotto = lotto || ( function () {
 		return rows;
 	};
 	
+	function getResultForRow(row, drawnNumbers, drawnAdditionalNumbers) {
+		var i, j, numMainNumbersFound = 0, numAddNumbersFound = 0;
+		for(i = 0; i < row.length; i++){
+			for(j = 0; j < drawnNumbers.length; j++){
+				if(row[i] === drawnNumbers[j]) {
+					numMainNumbersFound++;
+					break;
+				}
+			}
+			for(j = 0; j < drawnAdditionalNumbers.length; j++){
+				if(row[i] === drawnAdditionalNumbers[j]) {
+					numAddNumbersFound++;
+					break;
+				}
+			}
+		}
+		return {
+			main: numMainNumbersFound,
+			additional: numAddNumbersFound
+		};
+	};
+	
 	var lotto = {
 		init: function() {
 			vermin.elements.byId("save_ticket").addEventListener("click", this.saveTicket.bind(this), false);
@@ -64,15 +86,17 @@ var lotto = lotto || ( function () {
 			drawSectionContainer.appendChild(vermin.dom.create("table", {"id": "additional_numbers"}, createTableRow(ADDITIONAL_NUMBERS)));
 		},
 		checkResults: function () {
-			var drawnNumbers, drawnAdditionalNumbers;
+			var i, drawnNumbers, drawnAdditionalNumbers, rowResults = {};
 			var rows = getTicketRows(this.tableTicket.getElementsByTagName("tr"));
-			console.log("checkResults()");
+			drawnNumbers = extractTableRowData(vermin.elements.byId("main_numbers").getElementsByTagName("tr")[0]);
+			drawnAdditionalNumbers = extractTableRowData(vermin.elements.byId("additional_numbers").getElementsByTagName("tr")[0]);
+			for(i = 0; i < rows.length; i++){
+				rowResults[i] = getResultForRow(rows[i], drawnNumbers, drawnAdditionalNumbers);
+				console.log(i+1, "Found " + rowResults[i].main + " winning numbers, and " + rowResults[i].additional + " additional numbers for " + rows[i]);
+			}
 		},
 		saveTicket: function () {
-			var i, rows, ticket = {};
-			for(i = 0; i < tableRows.length; i++) {
-				rows.push(extractTableRowData(tableRows[i]));
-			}
+			var rows, ticket = {};
 			rows = getTicketRows(this.tableTicket.getElementsByTagName("tr"));
 			ticket[STORED_OBJECT_ROWS_KEY] = rows;
 			localStorage.setItem(LOCAL_STORAGE_PREFIX + LOCAL_STORAGE_TICKET_OBJECT_KEY, JSON.stringify(ticket));
