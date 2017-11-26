@@ -1,4 +1,5 @@
 input[type=text] {
+	background: inherit;
 	width: 60px;
 }
 
@@ -9,4 +10,12 @@ table {
 tr {
 	background: lightgrey;
 	border: 1px solid grey;
+}
+
+td {
+	background: inherit;
+}
+
+.won {
+	background: lightgreen;
 }

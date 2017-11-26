@@ -1,105 +1,117 @@
-/*
- * @depend vermin.core.js
- */
 var lotto = lotto || ( function () {
-	var NUMBERS_IN_ROW = 7;
-	var ADDITIONAL_NUMBERS = 3;
-	var ROWS_IN_TICKET = 10;
-	var LOCAL_STORAGE_PREFIX = "WonTheLottery:";
-	var LOCAL_STORAGE_TICKET_OBJECT_KEY = "ticket";
-	var STORED_OBJECT_ROWS_KEY = "rows";
+	const NUMBERS_IN_ROW = 7;
+	const ADDITIONAL_NUMBERS = 1;
+	const ROWS_IN_TICKET = 10;
+	const LOCAL_STORAGE_PREFIX = "WonTheLottery:";
+	const LOCAL_STORAGE_TICKET_OBJECT_KEY = "ticket";
+	const STORED_OBJECT_ROWS_KEY = "STORED_OBJECT_ROWS_KEY";
+	const MAIN_NUMBERS_REQ_TO_WIN = 4;
+	const WIN_CLASSNAME = 'won';
 	
-	function createTableRow(numCells, storedNumbers) {
-		var i, row, cells = [];
-		var inputAttributes = {
+	function createTableCell (inputAttributes) {
+		const cell = document.createElement('td');
+		const input = document.createElement('input');
+
+		Object.keys(inputAttributes).forEach((key) => {
+			input.setAttribute(key, inputAttributes[key]);
+		});
+
+		cell.appendChild(input);
+
+		return cell;
+	}
+
+	function createTableRow (numCells, storedNumbers) {
+		const row = document.createElement('tr');
+		const inputAttributes = {
 			"type": "text",
 			"autocomplete": "off",
 			"maxlength": "2"
 		};
-		for(i = 0; i < numCells; i++){
-			if(Array.isArray(storedNumbers)) {
-				inputAttributes.value = storedNumbers[i] || "";
-			}
-			cells.push(vermin.dom.create("td", {}, vermin.dom.create("input", inputAttributes)));
+		
+		for(let i = 0; i < numCells; i++) {
+			row.appendChild(createTableCell(Object.assign({}, inputAttributes, {
+				value: (Array.isArray(storedNumbers)) ? storedNumbers[i] : ''
+			})));
 		}
-		return vermin.dom.create("tr", {}, cells);
+
+	 	return row;
 	};
 	
-	function extractTableRowData(tableRow) {
-		var i, values = [];
-		var tableCells = tableRow.getElementsByTagName("input");
-		for(i = 0; i < tableCells.length; i++) {
-			values.push(tableCells[i].value);
-		}
-		return values;
+	function extractTableRowData (tableRow) {
+		return Array.from(tableRow.querySelectorAll('input')).map((cell) => {
+			return cell.value;
+		});
 	};
 	
-	function getTicketRows(tableRows) {
-		var rows = [];
-		for(i = 0; i < tableRows.length; i++) {
-			rows.push(extractTableRowData(tableRows[i]));
-		}
-		return rows;
+	function getTicketRows (tableRows) {
+		return Array.from(tableRows).map((row) => {
+			return extractTableRowData(row);
+		});
 	};
 	
-	function getResultForRow(row, drawnNumbers, drawnAdditionalNumbers) {
-		var i, j, numMainNumbersFound = 0, numAddNumbersFound = 0;
-		for(i = 0; i < row.length; i++){
-			for(j = 0; j < drawnNumbers.length; j++){
-				if(row[i] === drawnNumbers[j]) {
-					numMainNumbersFound++;
-					break;
-				}
-			}
-			for(j = 0; j < drawnAdditionalNumbers.length; j++){
-				if(row[i] === drawnAdditionalNumbers[j]) {
-					numAddNumbersFound++;
-					break;
-				}
-			}
-		}
+	function getResultForRow (row, drawnNumbers, drawnAdditionalNumbers) {
+		const main = row.reduce((numbersFound, number) => {
+			return drawnNumbers.includes(number) ? numbersFound + 1 : numbersFound;
+		}, 0);
+		const additional = row.reduce((numbersFound, number) => {
+			return drawnAdditionalNumbers.includes(number) ? numbersFound + 1 : numbersFound;
+		}, 0);
+
 		return {
-			main: numMainNumbersFound,
-			additional: numAddNumbersFound
+			main,
+			additional
 		};
 	};
-	
-	var lotto = {
-		init: function() {
-			vermin.elements.byId("save_ticket").addEventListener("click", this.saveTicket.bind(this), false);
-			vermin.elements.byId("check_results").addEventListener("click", this.checkResults.bind(this), false);
-			this.createTicket();
-			this.buildDrawSection();
-		},
-		createTicket: function() {
-			var i, savedTicket, ticketRows;
-			savedTicket = localStorage.getItem(LOCAL_STORAGE_PREFIX + LOCAL_STORAGE_TICKET_OBJECT_KEY);
-			ticketRows = savedTicket !== undefined || !savedTicket ? JSON.parse(savedTicket) : null;
-			this.tableTicket = vermin.elements.byId("ticket");
-			for(i = 0; i < ROWS_IN_TICKET; i++){
-				this.tableTicket.appendChild(createTableRow(NUMBERS_IN_ROW, Array.isArray(ticketRows) || ticketRows.rows[i]));
-			};
-		},
-		buildDrawSection: function() {
-			var drawSectionContainer = vermin.elements.byId("drawdata");
-			drawSectionContainer.appendChild(vermin.dom.create("table", {"id": "main_numbers"}, createTableRow(NUMBERS_IN_ROW)));
-			drawSectionContainer.appendChild(vermin.dom.create("table", {"id": "additional_numbers"}, createTableRow(ADDITIONAL_NUMBERS)));
-		},
-		checkResults: function () {
-			var i, drawnNumbers, drawnAdditionalNumbers, rowResults = {};
-			var rows = getTicketRows(this.tableTicket.getElementsByTagName("tr"));
-			drawnNumbers = extractTableRowData(vermin.elements.byId("main_numbers").getElementsByTagName("tr")[0]);
-			drawnAdditionalNumbers = extractTableRowData(vermin.elements.byId("additional_numbers").getElementsByTagName("tr")[0]);
-			for(i = 0; i < rows.length; i++){
-				rowResults[i] = getResultForRow(rows[i], drawnNumbers, drawnAdditionalNumbers);
-				console.log(i+1, "Found " + rowResults[i].main + " winning numbers, and " + rowResults[i].additional + " additional numbers for " + rows[i]);
-			}
-		},
-		saveTicket: function () {
-			var rows, ticket = {};
-			rows = getTicketRows(this.tableTicket.getElementsByTagName("tr"));
-			ticket[STORED_OBJECT_ROWS_KEY] = rows;
-			localStorage.setItem(LOCAL_STORAGE_PREFIX + LOCAL_STORAGE_TICKET_OBJECT_KEY, JSON.stringify(ticket));
+
+	function buildDrawSection () {
+		const drawSectionContainer = document.getElementById('drawdata');
+		const tableMain = document.createElement('table');
+		const tableAdditional = document.createElement('table');
+
+		tableMain.id = 'main_numbers';
+		tableMain.append(createTableRow(NUMBERS_IN_ROW));
+		drawSectionContainer.appendChild(tableMain);
+
+		tableAdditional.id = 'additional_numbers';
+		tableAdditional.append(createTableRow(ADDITIONAL_NUMBERS));
+		drawSectionContainer.appendChild(tableAdditional);
+	}
+
+	function createTicket (tableTicket) {
+		const savedTicket = localStorage.getItem(LOCAL_STORAGE_PREFIX + LOCAL_STORAGE_TICKET_OBJECT_KEY);
+		const ticketRows = savedTicket ? JSON.parse(savedTicket) : null;
+		for(i = 0; i < ROWS_IN_TICKET; i++){
+			tableTicket.appendChild(createTableRow(NUMBERS_IN_ROW, Array.isArray(ticketRows[STORED_OBJECT_ROWS_KEY]) && ticketRows[STORED_OBJECT_ROWS_KEY][i]));
+		};
+	}
+
+	return {
+		init: () => {
+			createTicket(document.getElementById('ticket'));
+			buildDrawSection();
+
+			document.getElementById('save_ticket').addEventListener('click', () => {
+				const rows = getTicketRows(document.getElementById('ticket').getElementsByTagName("tr"));
+				localStorage.setItem(LOCAL_STORAGE_PREFIX + LOCAL_STORAGE_TICKET_OBJECT_KEY, JSON.stringify({
+					STORED_OBJECT_ROWS_KEY: rows
+				}));
+			});
+
+			document.getElementById('check_results').addEventListener('click', () => {
+				const tableRows = document.getElementById('ticket').getElementsByTagName('tr');
+				const rows = getTicketRows(tableRows);
+				const drawnNumbers = extractTableRowData(document.getElementById('main_numbers').getElementsByTagName('tr')[0]);
+				const drawnAdditionalNumbers = extractTableRowData(document.getElementById('additional_numbers').getElementsByTagName('tr')[0]);
+
+				rows.forEach((row, index) => {
+					const {main, additional} = getResultForRow(row, drawnNumbers, drawnAdditionalNumbers);
+					const won = main >= MAIN_NUMBERS_REQ_TO_WIN ? WIN_CLASSNAME : '';
+					tableRows[index].className = won ? WIN_CLASSNAME : '';
+					console.log(`Rad ${index + 1} gir ${won ? '' : 'ikke '}premie! (${main}+${additional})`);
+				});
+			});
+
 		}
 	};
 	return lotto;
