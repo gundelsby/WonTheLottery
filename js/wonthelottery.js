@@ -80,7 +80,7 @@ var lotto = lotto || ( function () {
 
 	function createTicket (tableTicket) {
 		const savedTicket = localStorage.getItem(LOCAL_STORAGE_PREFIX + LOCAL_STORAGE_TICKET_OBJECT_KEY);
-		const ticketRows = savedTicket ? JSON.parse(savedTicket) : null;
+		const ticketRows = savedTicket ? JSON.parse(savedTicket) : {};
 		for(i = 0; i < ROWS_IN_TICKET; i++){
 			tableTicket.appendChild(createTableRow(NUMBERS_IN_ROW, Array.isArray(ticketRows[STORED_OBJECT_ROWS_KEY]) && ticketRows[STORED_OBJECT_ROWS_KEY][i]));
 		};
@@ -96,6 +96,16 @@ var lotto = lotto || ( function () {
 				localStorage.setItem(LOCAL_STORAGE_PREFIX + LOCAL_STORAGE_TICKET_OBJECT_KEY, JSON.stringify({
 					STORED_OBJECT_ROWS_KEY: rows
 				}));
+			});
+
+			document.getElementById('clear_ticket').addEventListener('click', () => {
+				const oldTicket = document.getElementById('ticket');
+				const newTicket = document.createElement('table');
+
+				oldTicket.parentElement.replaceChild(newTicket, oldTicket);
+				newTicket.id = 'ticket';
+				localStorage.removeItem(LOCAL_STORAGE_PREFIX + LOCAL_STORAGE_TICKET_OBJECT_KEY);
+				createTicket(newTicket);
 			});
 
 			document.getElementById('check_results').addEventListener('click', () => {
